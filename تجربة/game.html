@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لعبة X O</title>
+  <style>
+    body {
+      background-color: white;
+      font-family: sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      color: red;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 50px;
+    }
+
+    .score {
+      font-size: 20px;
+    }
+
+    .board-container {
+      position: relative;
+      width: 300px;
+      margin: auto;
+    }
+
+    #board {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cell {
+      position: absolute;
+      width: 33.33%;
+      height: 33.33%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .win-line {
+      position: absolute;
+      height: 5px;
+      background-color: blue;
+      transform-origin: left center;
+      display: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #board-img {
+      width: 300px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>لعبة X or O</h1>
+
+
+  <div class="container">
+    <div class="score">X:🟥 <span id="scoreX">0</span></div>
+    
+    <div class="score">O:🟦 <span id="scoreO">0</span></div>
+  </div>
+  
+  <div class="board-container">
+    <img src="board_0.png" id="board-img" alt="board">
+    <div id="board"></div>
+    <div class="win-line" id="win-line"></div>
+  </div>
+<button onclick="resetGame()">إعادة المباراة</button>
+<button style="background-color: orange; color: white;" onclick="goHome()">العودة إلى الصفحة الرئيسية</button>
+
+<script>
+  function goHome() {
+    window.location.href = "index.html"; // ← غيّر هذا حسب اسم الصفحة الرئيسية عندك
+  }
+</script>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    const board = document.getElementById("board");
+    const winLine = document.getElementById("win-line");
+    const result = document.getElementById("result");
+    const scoreXEl = document.getElementById("scoreX");
+    const scoreOEl = document.getElementById("scoreO");
+
+    let currentPlayer = "X";
+    let gameActive = true;
+    let scoreX = 0;
+    let scoreO = 0;
+    const cells = [];
+
+    const winCombos = [
+      [0,1,2], [3,4,5], [6,7,8], // rows
+      [0,3,6], [1,4,7], [2,5,8], // columns
+      [0,4,8], [2,4,6]           // diagonals
+    ];
+
+    function createBoard() {
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        cell.style.top = `${row * 33.33}%`;
+        cell.style.left = `${col * 33.33}%`;
+        cell.addEventListener("click", () => handleClick(i));
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function handleClick(index) {
+      if (!gameActive || cells[index].textContent) return;
+
+      cells[index].textContent = currentPlayer;
+      cells[index].style.color = currentPlayer === "X" ? "red" : "blue";
+
+      if (checkWin(currentPlayer)) {
+        gameActive = false;
+        result.textContent = `الفائز هو ${currentPlayer}`;
+        if (currentPlayer === "X") scoreX++;
+        else scoreO++;
+        updateScore();
+        return;
+      }
+
+      if (cells.every(cell => cell.textContent)) {
+        gameActive = false;
+        result.textContent = "تعادل!";
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+    }
+
+    function checkWin(player) {
+      for (const combo of winCombos) {
+        if (combo.every(i => cells[i].textContent === player)) {
+          showWinLine(combo, player);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function showWinLine(combo, player) {
+  const [start, , end] = combo;
+  const rectStart = cells[start].getBoundingClientRect();
+  const rectEnd = cells[end].getBoundingClientRect();
+  const boardRect = document.getElementById("board-img").getBoundingClientRect(); // ← هنا التغيير
+
+  const x1 = rectStart.left + rectStart.width / 2 - boardRect.left;
+  const y1 = rectStart.top + rectStart.height / 2 - boardRect.top;
+  const x2 = rectEnd.left + rectEnd.width / 2 - boardRect.left;
+  const y2 = rectEnd.top + rectEnd.height / 2 - boardRect.top;
+
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+  const line = winLine;
+  line.style.width = `${length}px`;
+  line.style.top = `${y1}px`;
+  line.style.left = `${x1}px`;
+  line.style.transform = `rotate(${angle}deg)`;
+  line.style.backgroundColor = player === "X" ? "red" : "blue";
+  line.style.display = "block";
+}
+
+
+    function updateScore() {
+      scoreXEl.textContent = scoreX;
+      scoreOEl.textContent = scoreO;
+    }
+
+    function resetGame() {
+      cells.forEach(cell => {
+        cell.textContent = "";
+        cell.style.color = "";
+      });
+      winLine.style.display = "none";
+      result.textContent = "";
+      currentPlayer = "X";
+      gameActive = true;
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
